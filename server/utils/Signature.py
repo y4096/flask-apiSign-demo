@@ -1,17 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-    utils.Signature
-    ~~~~~~~~~~~~~~
 
-    Api签名认证
-
-    :copyright: (c) 2017 by taochengwei.
-    :license: MIT, see LICENSE for more details.
-"""
-
-from .tool import md5, get_current_timestamp
+from .tool import sha256, get_current_timestamp
 from functools import wraps
 from flask import request, jsonify
+
 
 class Signature(object):
     """ 接口签名认证 """
@@ -39,7 +31,7 @@ class Signature(object):
         """ 校验accesskey_id
         @pram req_accesskey_id str: 请求参数中的用户标识id
         """
-        if req_accesskey_id in [ i['accesskey_id'] for i in self._accessKeys if "accesskey_id" in i ]:
+        if req_accesskey_id in [i['accesskey_id'] for i in self._accessKeys if "accesskey_id" in i]:
             return True
         return False
 
@@ -47,10 +39,10 @@ class Signature(object):
         """ 根据accesskey_id获取对应的accesskey_secret
         @pram accesskey_id str: 用户标识id
         """
-        return [ i['accesskey_secret'] for i in self._accessKeys if i.get('accesskey_id') == accesskey_id ][0]
+        return [i['accesskey_secret'] for i in self._accessKeys if i.get('accesskey_id') == accesskey_id][0]
 
     def _sign(self, parameters):
-        """ MD5签名
+        """ 签名
         @param parameters dict: 除signature外请求的所有查询参数(公共参数和私有参数)
         """
         if "signature" in parameters:
@@ -61,7 +53,7 @@ class Signature(object):
         for (k, v) in sortedParameters:
             canonicalizedQueryString += k + "=" + v + "&"
         canonicalizedQueryString += self._get_accesskey_secret(accesskey_id)
-        signature = md5(canonicalizedQueryString).upper()
+        signature = sha256(canonicalizedQueryString.encode("utf-8")).upper()
         return signature
 
     def _verification(self, req_params):
@@ -74,9 +66,9 @@ class Signature(object):
             req_timestamp = req_params["timestamp"]
             req_accesskey_id = req_params["accesskey_id"]
             req_signature = req_params["signature"]
-        except KeyError,e:
+        except KeyError:
             res.update(msg="Invalid public params")
-        except Exception,e:
+        except Exception:
             res.update(msg="Unknown server error")
         else:
             # NO.1 校验版本
@@ -107,4 +99,5 @@ class Signature(object):
                 return f(*args, **kwargs)
             else:
                 return jsonify(res)
+
         return decorated_function

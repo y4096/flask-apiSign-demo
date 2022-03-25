@@ -5,7 +5,7 @@
 
 import hashlib, datetime, time
 
-md5 = lambda pwd: hashlib.md5(pwd).hexdigest()
+sha256 = lambda pwd: hashlib.sha256(pwd).hexdigest()
 get_current_timestamp = lambda: int(time.mktime(datetime.datetime.now().timetuple()))
 
 class RequestClient(object):
@@ -30,9 +30,9 @@ class RequestClient(object):
             canonicalizedQueryString += '{}={}&'.format(k,v)
         canonicalizedQueryString += self._accesskey_secret
         # NO.3 加密返回签名: signature
-        return md5(canonicalizedQueryString).upper()
+        return sha256(canonicalizedQueryString.encode("utf-8")).upper()
 
-    def make_url(self, params={}):
+    def make_url(self, params):
         """生成请求参数
         @param params dict: uri请求参数(不包含公共参数)
         """
@@ -43,10 +43,10 @@ class RequestClient(object):
         # 设置公共参数
         publicParams = dict(accesskey_id=self._accesskey_id, version=self._version, timestamp=timestamp)
         # 添加加公共参数
-        for k,v in publicParams.iteritems():
+        for k,v in publicParams.items():
             params[k] = v
         uri = ''
-        for k,v in params.iteritems():
+        for k,v in params.items():
             uri += '{}={}&'.format(k,v)
         uri += 'signature=' + self._sign(params)
         return uri
@@ -54,6 +54,11 @@ class RequestClient(object):
     def request(self):
         """测试用例"""
         import requests
-        params = dict(c=3,d=4,b=2,a=1)
-        url = 'http://127.0.0.1:1798/?'+self.make_url(params)
+        params = dict()
+        url = 'http://192.168.255.10:1798/?'+self.make_url(params)
+        print(url)
         return requests.get(url).json()
+
+if __name__ == '__main__':
+    r = RequestClient()
+    print(r.request())

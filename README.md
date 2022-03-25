@@ -58,7 +58,7 @@ python main.py
 
       `例如：accesskey_id=test&b=2&timestamp=1511232761&version=v1&accesskey_secret`
 
-    3.3 将上一步得到的字符串MD5加密并转化为大写。
+    3.3 将上一步得到的字符串sha256加密并转化为大写。
 
       `例如：signature=F833B331E572FD9D3D64A8D0737490B0`
 

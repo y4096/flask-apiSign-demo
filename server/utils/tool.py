@@ -11,5 +11,5 @@
 
 import hashlib, time, datetime
 
-md5 = lambda pwd: hashlib.md5(pwd).hexdigest()
+sha256 = lambda pwd: hashlib.sha256(pwd).hexdigest()
 get_current_timestamp = lambda: int(time.mktime(datetime.datetime.now().timetuple()))
