@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .tool import sha256, get_current_timestamp
+from hashlib import sha256
 from functools import wraps
 from flask import request, jsonify
 
@@ -9,23 +9,9 @@ class Signature(object):
     """ 接口签名认证 """
 
     def __init__(self):
-        self._version = "v1"
         self._accessKeys = [
             {"accesskey_id": "demo_id", "accesskey_secret": "demo_secret"}
         ]
-        # 时间戳有效时长，单位秒
-        self._timestamp_expiration = 30
-
-    def _check_req_timestamp(self, req_timestamp):
-        """ 校验时间戳
-        @pram req_timestamp str,int: 请求参数中的时间戳(10位)
-        """
-        if len(str(req_timestamp)) == 10:
-            req_timestamp = int(req_timestamp)
-            now_timestamp = get_current_timestamp()
-            if req_timestamp <= now_timestamp and req_timestamp + self._timestamp_expiration >= now_timestamp:
-                return True
-        return False
 
     def _check_req_accesskey_id(self, req_accesskey_id):
         """ 校验accesskey_id
@@ -51,9 +37,9 @@ class Signature(object):
         sortedParameters = sorted(parameters.items(), key=lambda parameters: parameters[0])
         canonicalizedQueryString = ''
         for (k, v) in sortedParameters:
-            canonicalizedQueryString += k + "=" + v + "&"
+            canonicalizedQueryString += '{}={}&'.format(k, v)
         canonicalizedQueryString += self._get_accesskey_secret(accesskey_id)
-        signature = sha256(canonicalizedQueryString.encode("utf-8")).upper()
+        signature = sha256(canonicalizedQueryString.encode("utf-8")).hexdigest().upper()
         return signature
 
     def _verification(self, req_params):
@@ -62,8 +48,6 @@ class Signature(object):
         """
         res = dict(msg='', success=False)
         try:
-            req_version = req_params["version"]
-            req_timestamp = req_params["timestamp"]
             req_accesskey_id = req_params["accesskey_id"]
             req_signature = req_params["signature"]
         except KeyError:
@@ -71,30 +55,30 @@ class Signature(object):
         except Exception:
             res.update(msg="Unknown server error")
         else:
-            # NO.1 校验版本
-            if req_version == self._version:
-                # NO.2 校验时间戳
-                if self._check_req_timestamp(req_timestamp):
-                    # NO.3 校验accesskey_id
-                    if self._check_req_accesskey_id(req_accesskey_id):
-                        # NO.4 校验签名
-                        if req_signature == self._sign(req_params):
-                            res.update(msg="Verification pass", success=True)
-                        else:
-                            res.update(msg="Invalid query string")
-                    else:
-                        res.update(msg="Invalid accesskey_id")
+            # NO.1 校验accesskey_id
+            if self._check_req_accesskey_id(req_accesskey_id):
+                # NO.2 校验签名
+                if req_signature == self._sign(req_params):
+                    res.update(msg="Verification pass", success=True)
                 else:
-                    res.update(msg="Invalid timestamp")
+                    res.update(msg="Invalid query string")
             else:
-                res.update(msg="Invalid version")
+                res.update(msg="Invalid accesskey_id")
         return res
 
     def signature_required(self, f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            params = request.args.to_dict()
-            res = self._verification(params)
+            if request.method == "GET":
+                params = request.args.to_dict()
+            elif request.method == "POST":
+                params = request.json
+                print(params)
+            else:
+                return jsonify(dict(msg='only GET,POST allowed', success=False))
+            headers = request.headers
+            signature_headers = {'accesskey_id': headers['Accesskey-Id'], 'signature': headers['Signature']}
+            res = self._verification({**params, **signature_headers})
             if res["success"] is True:
                 return f(*args, **kwargs)
             else:

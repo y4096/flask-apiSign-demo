@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from flask import Flask, jsonify
-from utils.Signature import Signature
+from utils.Signature_no_timestamp import Signature
 
 # 初始化定义application
 app = Flask(__name__)
@@ -41,7 +41,7 @@ def Permission_denied(error=None):
     return jsonify(message), 403
 
 
-@app.route("/")
+@app.route("/", methods=['GET', 'POST'])
 @Sign.signature_required
 def index():
     # 正确请求将返回以下内容，否则将被signature_required拦截，返回请求验证信息： {"msg": "Invaild message", "success": False}

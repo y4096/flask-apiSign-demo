@@ -8,6 +8,7 @@ import hashlib, datetime, time
 sha256 = lambda pwd: hashlib.sha256(pwd).hexdigest()
 get_current_timestamp = lambda: int(time.mktime(datetime.datetime.now().timetuple()))
 
+
 class RequestClient(object):
     """ 接口签名客户端示例 """
 
@@ -27,7 +28,7 @@ class RequestClient(object):
         # NO.2 排序后拼接字符串
         canonicalizedQueryString = ''
         for (k, v) in _my_sorted:
-            canonicalizedQueryString += '{}={}&'.format(k,v)
+            canonicalizedQueryString += '{}={}&'.format(k, v)
         canonicalizedQueryString += self._accesskey_secret
         # NO.3 加密返回签名: signature
         return sha256(canonicalizedQueryString.encode("utf-8")).upper()
@@ -43,11 +44,11 @@ class RequestClient(object):
         # 设置公共参数
         publicParams = dict(accesskey_id=self._accesskey_id, version=self._version, timestamp=timestamp)
         # 添加加公共参数
-        for k,v in publicParams.items():
+        for k, v in publicParams.items():
             params[k] = v
         uri = ''
-        for k,v in params.items():
-            uri += '{}={}&'.format(k,v)
+        for k, v in params.items():
+            uri += '{}={}&'.format(k, v)
         uri += 'signature=' + self._sign(params)
         return uri
 
@@ -55,9 +56,10 @@ class RequestClient(object):
         """测试用例"""
         import requests
         params = dict()
-        url = 'http://192.168.255.10:1798/?'+self.make_url(params)
+        url = 'http://192.168.255.10:1798/?' + self.make_url(params)
         print(url)
         return requests.get(url).json()
+
 
 if __name__ == '__main__':
     r = RequestClient()
